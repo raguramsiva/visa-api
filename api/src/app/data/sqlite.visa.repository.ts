@@ -7,9 +7,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import Database, { type Database as DatabaseType } from 'better-sqlite3';
-import { Visa, CreateVisaDto, UpdateVisaDto } from '../types';
+import { Visa, CreateVisaDto, UpdateVisaDto, VisaListResult } from '../types';
 import { VisaRepository } from './visa.repository';
 import { DatabaseError } from '../errors';
+import { Cache } from './cache';
 
 let db: DatabaseType | null = null;
 
@@ -95,11 +96,18 @@ function buildWhere(filters: {
   return { clause, params };
 }
 
-/** SQLite implementation of VisaRepository. */
+/** SQLite implementation of VisaRepository with in-memory caching for getAll method. */
 export class SqliteVisaRepository implements VisaRepository {
   /**
    * Retrieves all visas matching filters with pagination.
    */
+
+  private readonly cache: Cache<VisaListResult>;
+
+  constructor() {
+    this.cache = new Cache<VisaListResult>();
+  }
+
   getAll(filters: {
     country?: string;
     visaType?: string;
@@ -108,7 +116,14 @@ export class SqliteVisaRepository implements VisaRepository {
     numberOfEntries?: string;
     offset?: number;
     limit?: number;
-  }) {
+  }): VisaListResult {
+    // Check cache first if no filters are provided
+    if (Object.keys(filters).length === 0) {
+      const cachedVisaListResult = this.cache.get();
+      if (cachedVisaListResult) {
+        return cachedVisaListResult;
+      }
+    }
     const database = getDb();
     const { clause: whereClause, params } = buildWhere(filters);
 
@@ -124,7 +139,11 @@ export class SqliteVisaRepository implements VisaRepository {
       .prepare(`SELECT * FROM visas ${whereClause} LIMIT ? OFFSET ?`)
       .all(...queryParams) as Visa[];
 
-    return { data, total };
+    const visaListResult: VisaListResult = { data, total };
+    // Cache the result
+    this.cache.set(visaListResult);
+
+    return visaListResult;
   }
 
   /**
@@ -153,6 +172,9 @@ export class SqliteVisaRepository implements VisaRepository {
       dto.filingFee
     );
     const id = result.lastInsertRowid as number;
+    // Clear cache
+    this.cache.clear();
+
     return { id, ...dto };
   }
 
@@ -198,6 +220,8 @@ export class SqliteVisaRepository implements VisaRepository {
     getDb()
       .prepare(`UPDATE visas SET ${updates.join(', ')} WHERE id = ?`)
       .run(...params);
+    // Clear cache
+    this.cache.clear();
 
     return this.getById(id);
   }
@@ -208,6 +232,9 @@ export class SqliteVisaRepository implements VisaRepository {
    */
   delete(id: number): boolean {
     const result = getDb().prepare('DELETE FROM visas WHERE id = ?').run(id);
+    // Clear cache
+    this.cache.clear();
+
     return result.changes > 0;
   }
 }

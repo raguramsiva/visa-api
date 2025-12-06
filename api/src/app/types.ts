@@ -29,6 +29,11 @@ export interface Visa {
 }
 
 /**
+ * Result of a list of paginated visa results and total count.
+ */
+export type VisaListResult = { data: Visa[]; total: number };
+
+/**
  * DTO for creating a new visa. All monetary values in USD.
  */
 export interface CreateVisaDto {
@@ -51,3 +56,8 @@ export interface UpdateVisaDto {
   numberOfEntries?: NumberOfEntries;
   filingFee?: number;
 }
+
+/**
+ * Record of currency codes and their exchange rates with respect to USD.
+ */
+export type CurrencyRate = Record<string, number>;

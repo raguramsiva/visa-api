@@ -6,13 +6,14 @@
  */
 
 import axios from 'axios';
+import { CurrencyRate } from '../types';
 import { CurrencyProvider } from './currency.provider';
-import { CurrencyCache } from './currency.cache';
+import { Cache } from './cache';
 
 interface ExchangeRateApiResponse {
   result: string;
   base_code: string;
-  conversion_rates: Record<string, number>;
+  conversion_rates: CurrencyRate;
 }
 
 /**
@@ -23,7 +24,7 @@ interface ExchangeRateApiResponse {
 export class ExchangeRateApiProvider implements CurrencyProvider {
   private readonly apiKey: string;
   private readonly baseUrl: string;
-  private readonly cache: CurrencyCache;
+  private readonly cache: Cache<CurrencyRate>;
 
   /**
    * @param apiKey - ExchangeRate-API key
@@ -32,7 +33,7 @@ export class ExchangeRateApiProvider implements CurrencyProvider {
   constructor(apiKey: string, ttlMinutes = 60) {
     this.apiKey = apiKey;
     this.baseUrl = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`;
-    this.cache = new CurrencyCache(ttlMinutes);
+    this.cache = new Cache<CurrencyRate>(ttlMinutes);
   }
 
   /**

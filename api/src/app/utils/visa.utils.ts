@@ -241,7 +241,7 @@ export function parseQueryFilters(req: Request): {
     limit,
   } = req.query;
 
-  return {
+  const filters = {
     country: country as string,
     visaType: visaType as string,
     minPrice: minPrice ? Number(minPrice) : undefined,
@@ -250,4 +250,16 @@ export function parseQueryFilters(req: Request): {
     offset: offset ? Number(offset) : undefined,
     limit: limit ? Number(limit) : undefined,
   };
+
+  const errors: string[] = [];
+
+  if (filters.maxPrice < filters.minPrice) {
+    errors.push('minPrice must be less than or equal to maxPrice');
+  }
+
+  if (errors.length > 0) {
+    throw new ValidationError(errors);
+  }
+
+  return filters;
 }

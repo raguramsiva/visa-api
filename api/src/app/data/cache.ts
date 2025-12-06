@@ -1,17 +1,17 @@
 /**
- * @fileoverview In-memory cache for currency exchange rates with TTL support.
+ * @fileoverview In-memory cache for provided generic type with TTL support.
  *
- * @module data/currency.cache
+ * @module data/cache
  */
 
-interface CacheEntry {
-  rates: Record<string, number>;
+interface CacheEntry<T> {
+  data: T;
   timestamp: number;
 }
 
-/** In-memory cache for currency exchange rates with TTL validation. */
-export class CurrencyCache {
-  private cache: CacheEntry | null = null;
+/** In-memory cache with TTL validation. */
+export class Cache<T> {
+  private cache: CacheEntry<T> | null = null;
   private readonly ttl: number;
 
   /**
@@ -34,21 +34,21 @@ export class CurrencyCache {
   }
 
   /**
-   * @returns Cached rates if valid
+   * @returns Cached data, if valid
    */
-  get(): Record<string, number> | null {
+  get(): T | null {
     if (this.isValid() && this.cache) {
-      return this.cache.rates;
+      return this.cache.data;
     }
     return null;
   }
 
   /**
-   * @param rates - Exchange rates to cache
+   * @param data - Cache the data.
    */
-  set(rates: Record<string, number>): void {
+  set(data: T): void {
     this.cache = {
-      rates,
+      data: data,
       timestamp: Date.now(), // UTC timestamp in milliseconds
     };
   }
@@ -58,4 +58,3 @@ export class CurrencyCache {
     this.cache = null;
   }
 }
-

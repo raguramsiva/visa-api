@@ -191,11 +191,11 @@ All visa prices are stored in USD. The API supports currency conversion using th
 ### Data Layer
 
 - **`api/src/app/data/visa.repository.ts`** - Repository interface abstracting visa data persistence
-- **`api/src/app/data/sqlite.visa.repository.ts`** - SQLite implementation of the visa repository
+- **`api/src/app/data/sqlite.visa.repository.ts`** - SQLite implementation of the visa repository with in-memory caching for getAll queries
 - **`api/src/app/data/currency.provider.ts`** - Interface for currency providers
 - **`api/src/app/data/currency.provider.factory.ts`** - Factory for creating currency provider instances
 - **`api/src/app/data/exchangerate-api.provider.ts`** - ExchangeRate-API v6 provider implementation with caching (uses https://www.exchangerate-api.com/)
-- **`api/src/app/data/currency.cache.ts`** - In-memory cache for currency exchange rates with TTL support
+- **`api/src/app/data/cache.ts`** - Generic in-memory cache implementation with TTL support (used for both currency rates and visa queries)
 
 ### Utilities & Configuration
 
@@ -295,7 +295,7 @@ This project focuses on RESTful API design and documentation, robust TypeScript 
 
 **Error Handling:** Custom error classes (`AppError`, `ValidationError`, `NotFoundError`, etc.) provide structured error handling with appropriate HTTP status codes and detailed error messages.
 
-**Caching:** Currency exchange rate in-memory caching is already implemented with configurable TTL. For this demo project, data is cached in-memory during an individual session. With a free trial of ExchangeRate-API Pro, we cache results with a TTL of 1 day by default, minimizing currency API requests. During a live discussion of this API, an API key with a free trial of ExchangeRate-API Pro will be used where we cache results with a TTL of 1 hour.
+**Caching:** The generic `Cache<T>` class provides in-memory caching with configurable TTL for both currency exchange rates and visa query results. Currency exchange rates are cached to minimize API requests (default TTL: 1 day). Visa repository caches unfiltered `getAll()` queries to reduce database load, with automatic cache clearing on mutations (POST/PUT/DELETE requests). All caching is in-memory during an individual session. For production, Redis-based distributed caching could be used.
 
 **API Rate Limiting:** Rate limiting is already implemented using `express-rate-limit` with configurable limits. For a production app, I could also use Redis for rate limiting.
 
